@@ -3,8 +3,9 @@ services:
   - type: web
     name: water-treatment-api
     env: python
-    buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
     envVars:
       - key: PYTHON_VERSION
@@ -15,8 +16,9 @@ services:
   # Frontend Static Site
   - type: static
     name: water-treatment-frontend
-    buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: frontend/dist
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
     plan: free
     envVars:
       - key: VITE_API_URL
