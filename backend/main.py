@@ -15,9 +15,20 @@ app = FastAPI(
 )
 
 # CORS middleware for frontend
+import os
+allowed_origins = [
+    "http://localhost:5173", 
+    "http://localhost:3000",
+    "https://water-treatment-frontend.onrender.com",  # Production frontend
+]
+
+# Allow all origins in development
+if os.getenv("CORS_ORIGINS") == "*":
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

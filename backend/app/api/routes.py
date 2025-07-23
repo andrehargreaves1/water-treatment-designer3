@@ -4,6 +4,7 @@ FastAPI routes for water treatment calculations
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 from ..models.ultrafiltration import UltrafiltrationModel
+from ..models.feed_tank import FeedTankModel
 from ..calculations.mass_balance import MassBalanceSolver, FlowsheetData
 from ..utils.validation import EngineeringError
 
@@ -26,6 +27,24 @@ async def calculate_ultrafiltration(inputs: Dict[str, Any]):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"UF calculation failed: {str(e)}")
+
+
+@router.post("/calculate/feed_tank")
+async def calculate_feed_tank(inputs: Dict[str, Any]):
+    """Calculate feed tank performance and water characterization"""
+    try:
+        equipment_id = inputs.get("equipment_id", "FEED_TANK-001")
+        feed_tank_model = FeedTankModel(equipment_id)
+        result = feed_tank_model.calculate_performance(inputs)
+        
+        return {
+            "success": result.success,
+            "data": result.data,
+            "errors": [error.dict() for error in result.errors],
+            "warnings": result.warnings
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Feed tank calculation failed: {str(e)}")
 
 
 @router.post("/calculate/flowsheet")
@@ -79,6 +98,33 @@ async def validate_equipment_config(equipment_data: Dict[str, Any]):
 async def get_equipment_types():
     """Get available equipment types and their configurations"""
     return {
+        "feed_tank": {
+            "name": "Feed Tank",
+            "description": "Water source characterization tank",
+            "inputs": [
+                {"name": "volume", "type": "float", "unit": "m³", "min": 1, "max": 50000},
+                {"name": "height", "type": "float", "unit": "m", "min": 1, "max": 50},
+                {"name": "level", "type": "float", "unit": "%", "min": 0, "max": 100},
+                {"name": "inflow_rate", "type": "float", "unit": "m³/h", "min": 0, "max": 10000},
+                {"name": "temperature", "type": "float", "unit": "°C", "min": 0, "max": 50},
+                {"name": "source_type", "type": "select", "options": ["surface_water", "groundwater", "municipal", "industrial"]},
+                {"name": "turbidity", "type": "float", "unit": "NTU", "min": 0, "max": 200},
+                {"name": "tss", "type": "float", "unit": "mg/L", "min": 0, "max": 1000},
+                {"name": "tds", "type": "float", "unit": "mg/L", "min": 0, "max": 5000},
+                {"name": "ph", "type": "float", "unit": "units", "min": 4, "max": 11},
+                {"name": "hardness", "type": "float", "unit": "mg/L CaCO₃", "min": 0, "max": 1000},
+                {"name": "iron", "type": "float", "unit": "mg/L", "min": 0, "max": 10},
+                {"name": "cod", "type": "float", "unit": "mg/L", "min": 0, "max": 1000}
+            ],
+            "outputs": [
+                {"name": "outlet_flow", "unit": "m³/h"},
+                {"name": "residence_time", "unit": "hours"},
+                {"name": "treatment_difficulty", "unit": "rating"},
+                {"name": "sdi_estimate", "unit": "index"},
+                {"name": "fouling_potential", "unit": "rating"},
+                {"name": "recommended_pretreatment", "unit": "list"}
+            ]
+        },
         "ultrafiltration": {
             "name": "Ultrafiltration",
             "description": "Membrane filtration system",

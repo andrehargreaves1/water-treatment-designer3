@@ -203,6 +203,27 @@ export const useFlowsheetStore = create<FlowsheetState>()(
         try {
           set({ isCalculating: true, errors: [], warnings: [] })
 
+          // Build inlet/outlet stream maps for each equipment
+          const equipmentStreams: Record<string, {inlet_streams: string[], outlet_streams: string[]}> = {}
+          
+          // Initialize empty arrays for all equipment
+          Object.keys(equipment).forEach(eqId => {
+            equipmentStreams[eqId] = { inlet_streams: [], outlet_streams: [] }
+          })
+          
+          // Populate stream connections
+          Object.entries(connections).forEach(([streamId, connection]) => {
+            const sourceEqId = connection.sourceEquipmentId
+            const targetEqId = connection.targetEquipmentId
+            
+            if (equipmentStreams[sourceEqId]) {
+              equipmentStreams[sourceEqId].outlet_streams.push(streamId)
+            }
+            if (equipmentStreams[targetEqId]) {
+              equipmentStreams[targetEqId].inlet_streams.push(streamId)
+            }
+          })
+
           // Prepare flowsheet data for backend
           const flowsheetData = {
             equipment: Object.fromEntries(
@@ -212,19 +233,80 @@ export const useFlowsheetStore = create<FlowsheetState>()(
                   equipment_id: id,
                   equipment_type: eq.type,
                   config: eq.config,
-                  inlet_streams: [],
-                  outlet_streams: []
+                  inlet_streams: equipmentStreams[id]?.inlet_streams || [],
+                  outlet_streams: equipmentStreams[id]?.outlet_streams || []
                 }
               ])
             ),
-            streams: {},
+            streams: Object.fromEntries(
+              Object.entries(connections).map(([streamId, connection]) => {
+                // Get water quality from source equipment if it's a feed tank
+                const sourceEq = equipment[connection.sourceEquipmentId]
+                let streamData = {
+                  stream_id: streamId,
+                  source_equipment: connection.sourceEquipmentId,
+                  target_equipment: connection.targetEquipmentId,
+                  source_port: connection.sourcePort,
+                  target_port: connection.targetPort,
+                  flow_rate: 0.0,
+                  pressure: 1.0,
+                  temperature: 25.0,
+                  concentration: 0.0,
+                  // Initialize with default water quality
+                  turbidity: 1.0,
+                  tss: 10.0,
+                  tds: 500.0,
+                  fog: 5.0,
+                  bod: 20.0,
+                  cod: 50.0,
+                  ph: 7.0,
+                  alkalinity: 100.0,
+                  hardness: 150.0,
+                  chloride: 50.0,
+                  sulfate: 30.0,
+                  nitrate: 10.0,
+                  phosphate: 2.0,
+                  iron: 0.5,
+                  manganese: 0.1
+                }
+                
+                // For feed tanks, initialize with their water quality
+                if (sourceEq?.type === 'feed_tank' && sourceEq.config) {
+                  streamData = {
+                    ...streamData,
+                    flow_rate: sourceEq.config.inflow_rate || 0,
+                    temperature: sourceEq.config.temperature || 25.0,
+                    turbidity: sourceEq.config.turbidity || 1.0,
+                    tss: sourceEq.config.tss || 10.0,
+                    tds: sourceEq.config.tds || 500.0,
+                    fog: sourceEq.config.fog || 5.0,
+                    bod: sourceEq.config.bod || 20.0,
+                    cod: sourceEq.config.cod || 50.0,
+                    ph: sourceEq.config.ph || 7.0,
+                    alkalinity: sourceEq.config.alkalinity || 100.0,
+                    hardness: sourceEq.config.hardness || 150.0,
+                    chloride: sourceEq.config.chloride || 50.0,
+                    sulfate: sourceEq.config.sulfate || 30.0,
+                    nitrate: sourceEq.config.nitrate || 10.0,
+                    phosphate: sourceEq.config.phosphate || 2.0,
+                    iron: sourceEq.config.iron || 0.5,
+                    manganese: sourceEq.config.manganese || 0.1
+                  }
+                }
+                
+                return [streamId, streamData]
+              })
+            ),
             connections
           }
 
           // Calculate flowsheet
+          console.log('Sending flowsheet data:', flowsheetData)
           const result = await processApi.calculateFlowsheet(flowsheetData)
+          console.log('Received calculation result:', result)
 
           if (result.success) {
+            console.log('Setting stream properties:', result.streams)
             set({
               calculations: result.equipment_results || {},
               streamProperties: result.streams || {},
@@ -235,6 +317,7 @@ export const useFlowsheetStore = create<FlowsheetState>()(
               lastCalculation: new Date().toISOString()
             })
           } else {
+            console.error('Calculation failed:', result.errors)
             set({
               errors: result.errors || [],
               isCalculating: false

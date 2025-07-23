@@ -1,0 +1,41 @@
+/* Custom stream edge animations for flow visualization */
+
+/* Define the dash flow animation - negative offset for correct direction */
+@keyframes dash-flow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -12; /* Negative for correct flow direction */
+  }
+}
+
+/* Global styles for all edges */
+.react-flow__edge-path {
+  stroke-dasharray: 8 4 !important;
+  stroke-width: 3 !important;
+}
+
+/* Animation for flowing streams */
+.react-flow__edge.animated .react-flow__edge-path {
+  animation: dash-flow linear infinite;
+}
+
+/* Selected stream highlighting */
+.react-flow__edge path[stroke-dasharray="8,4"] {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Better visibility for dashed streams */
+.react-flow__edges {
+  pointer-events: all;
+}
+
+.react-flow__edge {
+  cursor: pointer;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.5));
+}

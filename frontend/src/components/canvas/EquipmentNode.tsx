@@ -1,7 +1,7 @@
 import React from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
 import { Equipment, EQUIPMENT_PORTS } from '../../models/Equipment'
-import { UFSymbol, TankSymbol, PumpSymbol, StrainerSymbol } from '../equipment'
+import { UFSymbol, TankSymbol, PumpSymbol, StrainerSymbol, FeedTankSymbol } from '../equipment'
 import { useFlowsheetStore } from '../../store/flowsheetStore'
 
 interface EquipmentNodeData {
@@ -28,6 +28,14 @@ export const EquipmentNode: React.FC<NodeProps<EquipmentNodeData>> = ({
     }
 
     switch (equipment.type) {
+      case 'feed_tank':
+        return (
+          <FeedTankSymbol 
+            {...commonProps} 
+            level={equipment.config.level || 75}
+            sourceType={equipment.config.source_type || 'surface_water'}
+          />
+        )
       case 'ultrafiltration':
         return <UFSymbol {...commonProps} />
       case 'tank':

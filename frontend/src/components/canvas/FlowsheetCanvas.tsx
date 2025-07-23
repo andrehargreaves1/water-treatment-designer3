@@ -13,6 +13,7 @@ import ReactFlow, {
   ConnectionMode,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
+import './StreamEdge.css'
 
 import { EquipmentNode } from './EquipmentNode'
 import { useFlowsheetStore } from '../../store/flowsheetStore'
@@ -27,8 +28,11 @@ export const FlowsheetCanvas: React.FC = () => {
   const {
     equipment,
     connections,
+    streamProperties,
     selectedEquipment,
+    selectedStream,
     selectEquipment,
+    selectStream,
     addConnection,
     removeConnection,
   } = useFlowsheetStore()
@@ -53,24 +57,39 @@ export const FlowsheetCanvas: React.FC = () => {
       const streamType = getStreamType(connection.sourcePort || 'feed')
       const streamConfig = STREAM_TYPES[streamType]
       
+      // Get flow rate for animation speed
+      const streamProps = streamProperties[id]
+      const flowRate = streamProps?.flow_rate || 0
+      
+      // Calculate animation speed based on flow rate
+      let animationDuration = '3s' // slow
+      if (flowRate > 100) animationDuration = '0.5s' // fast
+      else if (flowRate > 50) animationDuration = '1.5s' // medium
+      
+      const isSelected = selectedStream === id
+      
       return {
         id,
         source: connection.sourceEquipmentId,
         target: connection.targetEquipmentId,
         sourceHandle: connection.sourcePort,
         targetHandle: connection.targetPort,
-        animated: true,
+        animated: flowRate > 0,
         style: {
           stroke: streamConfig.color,
-          strokeWidth: 3,
+          strokeWidth: isSelected ? 4 : 3,
+          strokeDasharray: '8,4',
+          strokeDashoffset: '0',
+          animation: flowRate > 0 ? `dash-flow ${animationDuration} linear infinite` : 'none',
         },
         data: {
           streamType,
           label: streamConfig.label,
+          flowRate,
         },
       }
     })
-  }, [connections])
+  }, [connections, selectedStream, streamProperties])
 
   const [nodesState, setNodes, onNodesChange] = useNodesState(nodes)
   const [edgesState, setEdges, onEdgesChange] = useEdgesState(edges)
@@ -105,9 +124,17 @@ export const FlowsheetCanvas: React.FC = () => {
     [selectEquipment]
   )
 
+  const onEdgeClick = useCallback(
+    (_event: React.MouseEvent, edge: any) => {
+      selectStream(edge.id)
+    },
+    [selectStream]
+  )
+
   const onPaneClick = useCallback(() => {
     selectEquipment(null)
-  }, [selectEquipment])
+    selectStream(null)
+  }, [selectEquipment, selectStream])
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -140,6 +167,7 @@ export const FlowsheetCanvas: React.FC = () => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
         onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}

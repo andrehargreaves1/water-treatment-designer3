@@ -1,7 +1,7 @@
 import React from 'react'
 import { useFlowsheetStore } from '../../store/flowsheetStore'
 import { Equipment } from '../../models/Equipment'
-import { UFSymbol, TankSymbol, PumpSymbol, StrainerSymbol } from '../equipment'
+import { UFSymbol, TankSymbol, PumpSymbol, StrainerSymbol, FeedTankSymbol } from '../equipment'
 
 interface EquipmentTemplate {
   type: string
@@ -12,6 +12,37 @@ interface EquipmentTemplate {
 }
 
 const EQUIPMENT_TEMPLATES: EquipmentTemplate[] = [
+  {
+    type: 'feed_tank',
+    name: 'Feed Tank',
+    description: 'Water source characterization',
+    defaultConfig: {
+      volume: 1000,
+      height: 10,
+      level: 75,
+      inflow_rate: 100,
+      temperature: 25,
+      source_type: 'surface_water',
+      source_description: 'River intake',
+      // Water quality defaults
+      turbidity: 5.0,
+      tss: 15.0,
+      tds: 350.0,
+      fog: 5.0,
+      bod: 12.0,
+      cod: 25.0,
+      ph: 7.2,
+      alkalinity: 120.0,
+      hardness: 180.0,
+      chloride: 45.0,
+      sulfate: 35.0,
+      nitrate: 8.0,
+      phosphate: 1.5,
+      iron: 0.3,
+      manganese: 0.05
+    },
+    icon: <FeedTankSymbol width={50} height={60} />
+  },
   {
     type: 'ultrafiltration',
     name: 'Ultrafiltration',
@@ -120,6 +151,19 @@ export const EquipmentPalette: React.FC = () => {
                   
                   {/* Key specifications */}
                   <div className="mt-2 space-y-1">
+                    {template.type === 'feed_tank' && (
+                      <>
+                        <div className="text-xs technical-data text-text-secondary">
+                          Volume: {template.defaultConfig.volume} m³
+                        </div>
+                        <div className="text-xs technical-data text-text-secondary">
+                          Source: {template.defaultConfig.source_type.replace('_', ' ')}
+                        </div>
+                        <div className="text-xs technical-data text-text-secondary">
+                          pH: {template.defaultConfig.ph}, TDS: {template.defaultConfig.tds} mg/L
+                        </div>
+                      </>
+                    )}
                     {template.type === 'ultrafiltration' && (
                       <>
                         <div className="text-xs technical-data text-text-secondary">

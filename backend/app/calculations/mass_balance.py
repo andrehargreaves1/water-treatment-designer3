@@ -19,6 +19,22 @@ class StreamData(BaseModel):
     target_equipment: str = ""
     source_port: str = ""
     target_port: str = ""
+    # Water quality parameters
+    turbidity: float = 1.0  # NTU
+    tss: float = 10.0  # mg/L Total Suspended Solids
+    tds: float = 500.0  # mg/L Total Dissolved Solids
+    fog: float = 5.0  # mg/L Fats, Oils and Grease
+    bod: float = 20.0  # mg/L Biochemical Oxygen Demand
+    cod: float = 50.0  # mg/L Chemical Oxygen Demand
+    ph: float = 7.0  # pH units
+    alkalinity: float = 100.0  # mg/L as CaCO3
+    hardness: float = 150.0  # mg/L as CaCO3
+    chloride: float = 50.0  # mg/L
+    sulfate: float = 30.0  # mg/L
+    nitrate: float = 10.0  # mg/L
+    phosphate: float = 2.0  # mg/L
+    iron: float = 0.5  # mg/L
+    manganese: float = 0.1  # mg/L
 
 
 class EquipmentData(BaseModel):
@@ -138,6 +154,26 @@ class MassBalanceSolver:
                 inlet_data[f"{stream.source_port}_pressure"] = stream.pressure
                 inlet_data[f"{stream.source_port}_temperature"] = stream.temperature
                 total_inlet_flow += stream.flow_rate
+                
+                # Pass water quality parameters for feed streams
+                if stream.source_port == "inlet" or "feed" in stream.source_port:
+                    inlet_data.update({
+                        "turbidity": stream.turbidity,
+                        "tss": stream.tss,
+                        "tds": stream.tds,
+                        "fog": stream.fog,
+                        "bod": stream.bod,
+                        "cod": stream.cod,
+                        "ph": stream.ph,
+                        "alkalinity": stream.alkalinity,
+                        "hardness": stream.hardness,
+                        "chloride": stream.chloride,
+                        "sulfate": stream.sulfate,
+                        "nitrate": stream.nitrate,
+                        "phosphate": stream.phosphate,
+                        "iron": stream.iron,
+                        "manganese": stream.manganese
+                    })
         
         # Combine inlet data with equipment configuration
         calc_inputs = {**equipment.config, **inlet_data}
@@ -155,6 +191,19 @@ class MassBalanceSolver:
                 return result.data
             else:
                 raise Exception(f"UF calculation failed: {[e.message for e in result.errors]}")
+        
+        elif equipment.equipment_type == "feed_tank":
+            from ..models.feed_tank import FeedTankModel
+            model = FeedTankModel(equipment.equipment_id)
+            result = model.calculate_performance(calc_inputs)
+            
+            if result.success:
+                # For feed tanks, we need to ensure the water quality gets propagated
+                result_data = result.data
+                print(f"Feed tank {equipment.equipment_id} calculation result:", result_data)
+                return result_data
+            else:
+                raise Exception(f"Feed tank calculation failed: {[e.message for e in result.errors]}")
         
         elif equipment.equipment_type == "tank":
             # Simple tank model - outlet = inlet
@@ -189,24 +238,49 @@ class MassBalanceSolver:
                               streams: Dict[str, StreamData]):
         """Update outlet stream flows based on equipment calculation"""
         
+        print(f"Updating outlet streams for {equipment.equipment_id}")
+        print(f"Outlet streams: {equipment.outlet_streams}")
+        print(f"Result data: {result}")
+        
         for stream_id in equipment.outlet_streams:
             if stream_id in streams:
                 stream = streams[stream_id]
+                print(f"Updating stream {stream_id}, source_port: {stream.source_port}")
                 
                 # Map calculation results to stream properties
                 if stream.source_port == "permeate_outlet" and "permeate_flow" in result:
                     stream.flow_rate = result["permeate_flow"]
+                    # Update permeate water quality if available
+                    if "permeate_quality" in result:
+                        self._update_stream_quality(stream, result["permeate_quality"])
                 elif stream.source_port == "concentrate_outlet" and "concentrate_flow" in result:
                     stream.flow_rate = result["concentrate_flow"]
+                    # Update concentrate water quality if available
+                    if "concentrate_quality" in result:
+                        self._update_stream_quality(stream, result["concentrate_quality"])
                 elif stream.source_port == "discharge" and "discharge_flow" in result:
                     stream.flow_rate = result["discharge_flow"]
                     stream.pressure = result.get("discharge_pressure", stream.pressure)
                 elif "outlet_flow" in result:
                     stream.flow_rate = result["outlet_flow"]
+                    # Update outlet quality for feed tanks and simple equipment
+                    if "outlet_quality" in result:
+                        print(f"Updating stream quality with: {result['outlet_quality']}")
+                        self._update_stream_quality(stream, result["outlet_quality"])
                 
                 # Update other properties
                 stream.pressure = result.get("outlet_pressure", stream.pressure)
                 stream.temperature = result.get("outlet_temperature", stream.temperature)
+                
+                print(f"Stream {stream_id} updated - flow: {stream.flow_rate}, turbidity: {stream.turbidity}")
+    
+    def _update_stream_quality(self, stream: StreamData, quality_data: Dict[str, Any]):
+        """Update stream water quality parameters"""
+        for param in ["turbidity", "tss", "tds", "fog", "bod", "cod", "ph", 
+                     "alkalinity", "hardness", "chloride", "sulfate", "nitrate", 
+                     "phosphate", "iron", "manganese"]:
+            if param in quality_data:
+                setattr(stream, param, quality_data[param])
     
     def _calculate_pump_power(self, flow_rate: float, head: float, efficiency: float) -> float:
         """Calculate pump power consumption (kW)"""

@@ -47,7 +47,36 @@ export interface StrainerEquipment extends BaseEquipment {
   }
 }
 
-export type Equipment = UFEquipment | TankEquipment | PumpEquipment | StrainerEquipment
+export interface FeedTankEquipment extends BaseEquipment {
+  type: 'feed_tank'
+  config: {
+    volume: number // m³
+    height: number // m
+    level: number // % (0-100)
+    inflow_rate: number // m³/h
+    temperature: number // °C
+    source_type: 'surface_water' | 'groundwater' | 'municipal' | 'industrial'
+    source_description: string
+    // Water quality parameters
+    turbidity: number // NTU
+    tss: number // mg/L Total Suspended Solids
+    tds: number // mg/L Total Dissolved Solids
+    fog: number // mg/L Fats, Oils and Grease
+    bod: number // mg/L Biochemical Oxygen Demand
+    cod: number // mg/L Chemical Oxygen Demand
+    ph: number // pH units
+    alkalinity: number // mg/L as CaCO3
+    hardness: number // mg/L as CaCO3
+    chloride: number // mg/L
+    sulfate: number // mg/L
+    nitrate: number // mg/L
+    phosphate: number // mg/L
+    iron: number // mg/L
+    manganese: number // mg/L
+  }
+}
+
+export type Equipment = UFEquipment | TankEquipment | PumpEquipment | StrainerEquipment | FeedTankEquipment
 
 export interface EquipmentResults {
   [equipmentId: string]: {
@@ -168,6 +197,40 @@ export const EQUIPMENT_PORTS: Record<string, Record<string, PortConfig>> = {
       streamTypes: ['waste_water', 'backwash_water'],
       diameter: 'DN25',
       maxPressure: 3.0
+    }
+  },
+  feed_tank: {
+    inlet: {
+      id: 'inlet',
+      position: { x: 0.5, y: 0 },
+      type: 'inlet',
+      streamTypes: ['feed', 'municipal_water', 'raw_water'],
+      diameter: 'DN150',
+      maxPressure: 5.0
+    },
+    outlet: {
+      id: 'outlet',
+      position: { x: 0.5, y: 1 },
+      type: 'outlet',
+      streamTypes: ['feed', 'raw_water'],
+      diameter: 'DN150',
+      maxPressure: 3.0
+    },
+    overflow: {
+      id: 'overflow',
+      position: { x: 0, y: 0.3 },
+      type: 'outlet',
+      streamTypes: ['overflow', 'waste_water'],
+      diameter: 'DN100',
+      maxPressure: 2.0
+    },
+    drain: {
+      id: 'drain',
+      position: { x: 0.3, y: 1 },
+      type: 'outlet',
+      streamTypes: ['waste_water', 'drain'],
+      diameter: 'DN50',
+      maxPressure: 2.0
     }
   }
 }

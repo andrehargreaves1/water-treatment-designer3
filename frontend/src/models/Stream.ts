@@ -16,6 +16,25 @@ export interface StreamProperties {
   temperature: number // °C
   concentration: number // g/L
   composition?: Record<string, number> // Component concentrations
+  waterQuality?: WaterQuality // Water quality parameters
+}
+
+export interface WaterQuality {
+  turbidity: number // NTU
+  tss: number // mg/L Total Suspended Solids
+  tds: number // mg/L Total Dissolved Solids
+  fog: number // mg/L Fats, Oils and Grease
+  bod: number // mg/L Biochemical Oxygen Demand
+  cod: number // mg/L Chemical Oxygen Demand
+  ph: number // pH units
+  alkalinity: number // mg/L as CaCO3
+  hardness: number // mg/L as CaCO3
+  chloride: number // mg/L
+  sulfate: number // mg/L
+  nitrate: number // mg/L
+  phosphate: number // mg/L
+  iron: number // mg/L
+  manganese: number // mg/L
 }
 
 export interface StreamStyle {
