@@ -1,0 +1,132 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Professional Industrial Styling */
+:root {
+  /* Equipment colors (P&ID standard) */
+  --equipment-outline: #1e293b;
+  --equipment-fill: #ffffff;
+  --equipment-selected: #2563eb;
+  
+  /* Stream colors (ISA-5.1 colors) */
+  --stream-feed: #ea580c;
+  --stream-product: #2563eb;
+  --stream-waste: #6b7280;
+  --stream-chemical: #d97706;
+  --stream-air: #059669;
+  
+  /* UI colors */
+  --background: #f8fafc;
+  --panel: #ffffff;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-text-primary font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Professional typography */
+  .technical-data {
+    @apply font-mono text-technical leading-tight;
+    font-feature-settings: "tnum" 1;
+  }
+  
+  .equipment-label {
+    @apply font-sans font-semibold text-equipment-label;
+  }
+  
+  .process-value {
+    @apply font-mono font-medium text-sm;
+  }
+}
+
+@layer components {
+  /* Equipment symbols */
+  .equipment-symbol {
+    @apply fill-equipment-fill stroke-equipment-outline;
+    stroke-width: 1.5;
+  }
+  
+  .equipment-symbol.selected {
+    @apply stroke-equipment-selected;
+    stroke-width: 2;
+  }
+  
+  /* Professional panel styling */
+  .panel {
+    @apply bg-panel border border-border rounded-sm shadow-sm;
+  }
+  
+  .panel-header {
+    @apply px-4 py-3 border-b border-border bg-gray-50;
+  }
+  
+  .panel-content {
+    @apply p-4;
+  }
+  
+  /* Technical input styling */
+  .technical-input {
+    @apply font-mono text-sm px-3 py-2 border border-border rounded-sm;
+    @apply focus:outline-none focus:ring-1 focus:ring-equipment-selected focus:border-equipment-selected;
+  }
+  
+  /* Stream connections */
+  .stream-connection {
+    stroke-width: 3;
+    fill: none;
+    stroke-linecap: round;
+  }
+  
+  .stream-feed {
+    stroke: var(--stream-feed);
+  }
+  
+  .stream-product {
+    stroke: var(--stream-product);
+  }
+  
+  .stream-waste {
+    stroke: var(--stream-waste);
+  }
+  
+  .stream-chemical {
+    stroke: var(--stream-chemical);
+  }
+  
+  /* Professional buttons */
+  .btn-primary {
+    @apply bg-equipment-selected text-white px-4 py-2 rounded-sm;
+    @apply hover:bg-blue-700 transition-colors font-medium;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-100 text-text-primary px-4 py-2 rounded-sm;
+    @apply hover:bg-gray-200 transition-colors font-medium;
+  }
+}
+
+@layer utilities {
+  /* Professional shadows */
+  .shadow-equipment {
+    box-shadow: 0 1px 3px rgba(30, 41, 59, 0.1);
+  }
+  
+  .shadow-panel {
+    box-shadow: 0 1px 2px rgba(30, 41, 59, 0.05);
+  }
+  
+  /* Text utilities */
+  .text-technical {
+    font-variant-numeric: tabular-nums;
+  }
+}
